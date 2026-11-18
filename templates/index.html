@@ -23,31 +23,63 @@
     <main>
         <h2>Nosso cardápio</h2>
 
+<section id="personalizar">
+    <h2>Monte seu açaí 🍇</h2>
+    <p>Escolha seus acompanhamentos:</p>
+
+    <div class="adicionais">
+        <label><input type="checkbox" value="2" data-nome="Banana"> Banana — R$ 2,00</label>
+        <label><input type="checkbox" value="3" data-nome="Morango"> Morango — R$ 3,00</label>
+        <label><input type="checkbox" value="2" data-nome="Granola"> Granola — R$ 2,00</label>
+        <label><input type="checkbox" value="2.5" data-nome="Leite em pó"> Leite em pó — R$ 2,50</label>
+        <label><input type="checkbox" value="2.5" data-nome="Leite condensado"> Leite condensado — R$ 2,50</label>
+        <label><input type="checkbox" value="2" data-nome="Paçoca"> Paçoca — R$ 2,00</label>
+    </div>
+
+    <p id="preco-adicionais">Adicionais: R$ 0,00</p>
+</section>
+
+<div id="previsao-pedido">
+    <h3>Seu pedido</h3>
+
+    <p id="preview-nome">Escolha um tamanho de açaí.</p>
+
+    <p id="preview-adicionais">
+        Nenhum adicional selecionado.
+    </p>
+
+    <h3 id="preview-total">Total: R$ 0,00</h3>
+
+    <button id="confirmar-pedido" onclick="confirmarPedido()" disabled>
+        Adicionar ao carrinho
+    </button>
+</div>
+
         <div class="produtos">
 
             <div class="produto">
-                <img src="/static/acai1.jpg" alt="Açaí pequeno">
+                <img src="/static/açai1.webp" alt="Açaí pequeno">
                 <h3>Açaí Pequeno</h3>
                 <p>R$ 12,00</p>
-                <button onclick="adicionar('Açaí Pequeno', 12)">
+                <button onclick="selecionarAcai('Açaí Pequeno', 12)">
                     Adicionar ao carrinho
                 </button>
             </div>
 
             <div class="produto">
-                <img src="/static/acai2.jpg" alt="Açaí médio">
+                <img src="/static/açai2.webp" alt="Açaí médio">
                 <h3>Açaí Médio</h3>
                 <p>R$ 15,00</p>
-                <button onclick="adicionar('Açaí Médio', 15)">
+                <button onclick="selecionarAcai('Açaí Médio', 15)">
                     Adicionar ao carrinho
                 </button>
             </div>
 
             <div class="produto">
-                <img src="/static/acai3.jpg" alt="Açaí grande">
+                <img src="/static/açai3.webp" alt="Açaí grande">
                 <h3>Açaí Grande</h3>
                 <p>R$ 20,00</p>
-                <button onclick="adicionar('Açaí Grande', 20)">
+                <button onclick="selecionarAcai('Açaí Grande', 20)">
                     Adicionar ao carrinho
                 </button>
             </div>
@@ -81,9 +113,12 @@
     </iframe>
 </section>
 
-    <section id="carrinho">
-        <h2>Meu carrinho</h2>
+   <section id="carrinho">
+    <button id="fechar-carrinho" onclick="alternarCarrinho()">
+        ✕
+    </button>
 
+    <h2>Meu carrinho</h2>
         <div id="itens-carrinho">
             <p>Seu carrinho está vazio.</p>
         </div>
@@ -95,11 +130,161 @@
 let carrinho = [];
 let total = 0;
 
+let acaiSelecionado = null;
+
+function selecionarAcai(nome, preco) {
+    acaiSelecionado = {
+        nome: nome,
+        preco: preco
+    };
+
+    document.querySelectorAll(".produto").forEach(function(card) {
+        card.classList.remove("produto-selecionado");
+
+        if (card.querySelector("h3").textContent === nome) {
+            card.classList.add("produto-selecionado");
+        }
+    });
+
+    atualizarPrevia();
+}
+
+function atualizarPrevia() {
+    const adicionais = document.querySelectorAll(
+        '#personalizar input[type="checkbox"]:checked'
+    );
+
+    let nomes = [];
+    let soma = 0;
+
+    adicionais.forEach(function(item) {
+        nomes.push(item.dataset.nome);
+        soma += Number(item.value);
+    });
+
+    const botao = document.getElementById("confirmar-pedido");
+
+    if (!acaiSelecionado) {
+        document.getElementById("preview-nome").textContent =
+            "Escolha um tamanho de açaí.";
+        botao.disabled = true;
+        return;
+    }
+
+    document.getElementById("preview-nome").textContent =
+        acaiSelecionado.nome;
+
+    document.getElementById("preview-adicionais").textContent =
+        nomes.length ? nomes.join(", ") : "Nenhum adicional selecionado.";
+
+    document.getElementById("preview-total").textContent =
+        "Total: R$ " +
+        (acaiSelecionado.preco + soma).toFixed(2).replace(".", ",");
+
+    botao.disabled = false;
+}
+
+
 function adicionar(nome, preco) {
-    carrinho.push({ nome: nome, preco: preco });
+    const selecionados = document.querySelectorAll(
+        '#personalizar input[type="checkbox"]:checked'
+    );
+
+    let nomesAdicionais = [];
+    let precoAdicionais = 0;
+
+    selecionados.forEach(function(item) {
+        nomesAdicionais.push(item.dataset.nome);
+        precoAdicionais += Number(item.value);
+    });
+
+    let nomeCompleto = nome;
+
+    if (nomesAdicionais.length > 0) {
+        nomeCompleto += " + " + nomesAdicionais.join(", ");
+    }
+
+    carrinho.push({
+        nome: nomeCompleto,
+        preco: preco + precoAdicionais
+    });
+
+    selecionados.forEach(function(item) {
+        item.checked = false;
+    });
+
+    atualizarPrecoAdicionais();
     atualizarCarrinho();
 }
 
+function atualizarPrecoAdicionais() {
+    const selecionados = document.querySelectorAll(
+        '#personalizar input[type="checkbox"]:checked'
+    );
+
+    let soma = 0;
+
+    selecionados.forEach(function(item) {
+        soma += Number(item.value);
+    });
+
+    document.getElementById("preco-adicionais").textContent =
+        "Adicionais: R$ " + soma.toFixed(2).replace(".", ",");
+}
+
+document.querySelectorAll(
+    '#personalizar input[type="checkbox"]'
+).forEach(function(item) {
+    item.addEventListener("change", atualizarPrecoAdicionais);
+});
+
+function confirmarPedido() {
+    if (!acaiSelecionado) return;
+
+    const adicionais = document.querySelectorAll(
+        '#personalizar input[type="checkbox"]:checked'
+    );
+
+    let nomes = [];
+    let precoAdicionais = 0;
+
+    adicionais.forEach(function(item) {
+        nomes.push(item.dataset.nome);
+        precoAdicionais += Number(item.value);
+        item.checked = false;
+    });
+
+    let nomeCompleto = acaiSelecionado.nome;
+
+    if (nomes.length > 0) {
+        nomeCompleto += " + " + nomes.join(", ");
+    }
+
+    carrinho.push({
+        nome: nomeCompleto,
+        preco: acaiSelecionado.preco + precoAdicionais
+    });
+
+    acaiSelecionado = null;
+
+    document.getElementById("preview-nome").textContent =
+        "Escolha um tamanho de açaí.";
+
+    document.getElementById("preview-adicionais").textContent =
+        "Nenhum adicional selecionado.";
+
+    document.getElementById("preview-total").textContent =
+        "Total: R$ 0,00";
+
+    document.getElementById("confirmar-pedido").disabled = true;
+
+    atualizarPrecoAdicionais();
+    atualizarCarrinho();
+}function alternarCarrinho() {
+    document.getElementById("carrinho").classList.toggle("aberto");
+
+    document.getElementById("fundo-escuro").classList.toggle("ativo");
+}
 function atualizarCarrinho() {
     let lista = document.getElementById("itens-carrinho");
     let totalElemento = document.getElementById("total");
@@ -136,7 +321,10 @@ function atualizarCarrinho() {
     totalElemento.textContent =
         total.toFixed(2).replace(".", ",");
 }
-</script>
-
+</script><div id="fundo-escuro" onclick="alternarCarrinho()"></div>
+<button id="abrir-carrinho" onclick="alternarCarrinho()">
+    🛒
+    <span id="contador-carrinho">0</span>
+</button>
 </body>
 </html>
